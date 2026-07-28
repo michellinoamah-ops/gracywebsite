@@ -1,40 +1,60 @@
-/* ================= ADMIN CONTENT OVERRIDES ================= */
-var ADMIN_KEY = "isew_admin_overrides";
-var ADMIN_PASSWORD = "Gracy22*";
+/* ================= FIREBASE BACKEND ================= */
+var firebaseReady = false;
+var db = null, auth = null, storage = null;
 
-function loadOverrides(){
-  try{
-    var raw = localStorage.getItem(ADMIN_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch(e){ return {}; }
-}
-function saveOverrides(){
-  try{ localStorage.setItem(ADMIN_KEY, JSON.stringify(adminOverrides)); } catch(e){}
-}
-var adminOverrides = loadOverrides();
-adminOverrides.text = adminOverrides.text || {};
-adminOverrides.classEdits = adminOverrides.classEdits || {};
-adminOverrides.hiddenClasses = adminOverrides.hiddenClasses || [];
-adminOverrides.customClasses = adminOverrides.customClasses || [];
-adminOverrides.hiddenTestimonials = adminOverrides.hiddenTestimonials || [];
-adminOverrides.customTestimonials = adminOverrides.customTestimonials || [];
+(function initFirebase(){
+  try {
+    if (window.firebaseConfig && window.firebase) {
+      firebase.initializeApp(window.firebaseConfig);
+      db = firebase.firestore();
+      auth = firebase.auth();
+      storage = firebase.storage();
+      auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+      firebaseReady = true;
+    } else {
+      console.warn('Firebase config not found. Site will run in local/offline mode with default content only.');
+    }
+  } catch (e) {
+    console.warn('Firebase failed to initialize:', e);
+  }
+})();
+
+var ADMIN_EMAIL = (window.firebaseConfig && window.firebaseConfig.adminEmail) || 'admin@isewwithgracy.com';
 
 var adminSession = { active: false };
-
-function applyTextOverrides(){
-  document.querySelectorAll('[data-editable]').forEach(function(el){
-    var key = el.getAttribute('data-editable');
-    if(adminOverrides.text[key] !== undefined){
-      el.textContent = adminOverrides.text[key];
-    }
-  });
-}
 
 var defaultTextValues = {};
 document.querySelectorAll('[data-editable]').forEach(function(el){
   defaultTextValues[el.getAttribute('data-editable')] = el.textContent.trim();
 });
+
+var liveText = null;
+
+function applyTextOverrides(){
+  var source = liveText || defaultTextValues;
+  document.querySelectorAll('[data-editable]').forEach(function(el){
+    var key = el.getAttribute('data-editable');
+    if(source[key] !== undefined){
+      el.textContent = source[key];
+    }
+  });
+}
 applyTextOverrides();
+
+if(firebaseReady){
+  db.collection('content').doc('main').onSnapshot(function(doc){
+    liveText = doc.exists ? (doc.data().text || {}) : null;
+    applyTextOverrides();
+    if(adminSession.active && typeof renderAdminContentFields === 'function'){ renderAdminContentFields(); }
+  }, function(err){ console.warn('content listener error:', err); });
+}
+
+function base64ToBlob(b64, mime){
+  var byteChars = atob(b64);
+  var byteNumbers = new Array(byteChars.length);
+  for(var i=0;i<byteChars.length;i++){ byteNumbers[i] = byteChars.charCodeAt(i); }
+  return new Blob([new Uint8Array(byteNumbers)], { type: mime });
+}
 
 var classes = [
     {
@@ -111,15 +131,34 @@ var classes = [
 
   var grid = document.getElementById('class-grid');
   var classesById = {};
+  var liveClasses = null;
+
+  var PLACEHOLDER_FLYER = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="%231a2a22"/><text x="150" y="200" fill="%236FDDB3" font-size="16" text-anchor="middle" font-family="Arial">No image yet</text></svg>'
+  );
+
+  function courseFlyerSrc(c){
+    if(c.flyerUrl){ return c.flyerUrl; }
+    if(c.flyerDataUrl){ return c.flyerDataUrl; }
+    if(c.flyer){ return "data:image/jpeg;base64," + c.flyer; }
+    return PLACEHOLDER_FLYER;
+  }
 
   function getRenderClasses(){
-    var base = classes.map(function(c){
-      var edit = adminOverrides.classEdits[c.id];
-      return edit ? Object.assign({}, c, edit) : c;
-    }).filter(function(c){
-      return adminOverrides.hiddenClasses.indexOf(c.id) === -1;
-    });
-    return base.concat(adminOverrides.customClasses);
+    if(liveClasses !== null){
+      return liveClasses.filter(function(c){ return !c.hidden; });
+    }
+    return classes;
+  }
+
+  if(firebaseReady){
+    db.collection('classes').orderBy('order').onSnapshot(function(snap){
+      var arr = [];
+      snap.forEach(function(doc){ arr.push(Object.assign({ id: doc.id }, doc.data())); });
+      liveClasses = arr.length ? arr : null;
+      renderClasses();
+      if(adminSession.active && typeof renderAdminCoursesList === 'function'){ renderAdminCoursesList(); }
+    }, function(err){ console.warn('classes listener error:', err); });
   }
 
   function renderClasses(){
@@ -180,7 +219,7 @@ var classes = [
     var c = classesById[id];
     if(!c){ return; }
     currentCourseId = id;
-    overlayImg.src = c.flyerDataUrl ? c.flyerDataUrl : ("data:image/jpeg;base64," + c.flyer);
+    overlayImg.src = courseFlyerSrc(c);
     overlayImg.alt = c.pageTitle + " flyer";
     overlayTitle.textContent = c.pageTitle;
     overlayDesc.textContent = c.pageDesc;
@@ -229,16 +268,30 @@ var classes = [
   var tIndex = 0;
   var tTimer = null;
   var renderTestimonials_list = [];
+  var liveTestimonials = null;
 
   function getRenderTestimonials(){
-    var base = testimonials.filter(function(t){
-      return adminOverrides.hiddenTestimonials.indexOf(t.id) === -1;
-    });
-    return base.concat(adminOverrides.customTestimonials);
+    if(liveTestimonials !== null){
+      return liveTestimonials.filter(function(t){ return !t.hidden; });
+    }
+    return testimonials;
   }
 
   function testimonialImgSrc(t){
-    return t.type === 'custom' ? t.img : ("data:image/jpeg;base64," + t.img);
+    if(t.imgUrl){ return t.imgUrl; }
+    if(t.type === 'custom'){ return t.img; }
+    return "data:image/jpeg;base64," + t.img;
+  }
+
+  if(firebaseReady){
+    db.collection('testimonials').orderBy('order').onSnapshot(function(snap){
+      var arr = [];
+      snap.forEach(function(doc){ arr.push(Object.assign({ id: doc.id }, doc.data())); });
+      liveTestimonials = arr.length ? arr : null;
+      renderTestimonials();
+      restartTimer();
+      if(adminSession.active && typeof renderAdminTestimonialsList === 'function'){ renderAdminTestimonialsList(); }
+    }, function(err){ console.warn('testimonials listener error:', err); });
   }
 
   function renderTestimonials(){
@@ -293,25 +346,6 @@ var classes = [
   }
 
   restartTimer();
-
-  document.addEventListener('click', function(e){
-    var delT = e.target.closest('[data-delete-testimonial]');
-    if(delT){
-      var tid = delT.getAttribute('data-delete-testimonial');
-      var isCustom = adminOverrides.customTestimonials.some(function(t){ return t.id === tid; });
-      if(isCustom){
-        adminOverrides.customTestimonials = adminOverrides.customTestimonials.filter(function(t){ return t.id !== tid; });
-      } else {
-        if(adminOverrides.hiddenTestimonials.indexOf(tid) === -1){
-          adminOverrides.hiddenTestimonials.push(tid);
-        }
-      }
-      saveOverrides();
-      renderTestimonials();
-      restartTimer();
-      if(typeof renderAdminTestimonialsList === 'function'){ renderAdminTestimonialsList(); }
-    }
-  });
 
   /* ---------- PAGE NAVIGATION ---------- */
   var pageStack = ['page-home'];
@@ -417,7 +451,7 @@ var classes = [
     });
   }
 
-/* ================= ADMIN SYSTEM ================= */
+/* ================= ADMIN SYSTEM (FIREBASE-BACKED) ================= */
 
 /* ---- secret 5-tap trigger ---- */
 (function(){
@@ -440,7 +474,7 @@ var classes = [
   }
 })();
 
-/* ---- login modal ---- */
+/* ---- login modal (real Firebase Authentication) ---- */
 var adminLoginModal = document.getElementById('admin-login-modal');
 var adminPasswordInput = document.getElementById('admin-password-input');
 var adminLoginError = document.getElementById('admin-login-error');
@@ -448,6 +482,10 @@ var adminLoginError = document.getElementById('admin-login-error');
 function openAdminLogin(){
   if(adminSession.active){
     openAdminPanel();
+    return;
+  }
+  if(!firebaseReady){
+    alert('The site backend isn\'t connected yet. See firebase-config.js.');
     return;
   }
   adminLoginError.style.display = 'none';
@@ -461,16 +499,17 @@ function closeAdminLogin(){
 }
 
 function attemptAdminLogin(){
-  if(adminPasswordInput.value === ADMIN_PASSWORD){
-    adminSession.active = true;
-    updateAdminEditableState();
+  var password = adminPasswordInput.value;
+  adminLoginError.style.display = 'none';
+
+  auth.signInWithEmailAndPassword(ADMIN_EMAIL, password).then(function(){
     closeAdminLogin();
-    openAdminPanel();
-  } else {
+  }).catch(function(err){
+    adminLoginError.textContent = "That password isn't right. Try again.";
     adminLoginError.style.display = 'block';
     adminPasswordInput.value = '';
     adminPasswordInput.focus();
-  }
+  });
 }
 
 document.getElementById('admin-login-submit').addEventListener('click', attemptAdminLogin);
@@ -481,6 +520,14 @@ adminPasswordInput.addEventListener('keydown', function(e){
 adminLoginModal.addEventListener('click', function(e){
   if(e.target === adminLoginModal){ closeAdminLogin(); }
 });
+
+/* ---- react to real auth state (so admin stays in sync with the backend) ---- */
+if(firebaseReady){
+  auth.onAuthStateChanged(function(user){
+    adminSession.active = !!user;
+    updateAdminEditableState();
+  });
+}
 
 /* ---- admin panel open/close + tabs ---- */
 var adminPanel = document.getElementById('admin-panel');
@@ -509,19 +556,71 @@ document.querySelectorAll('.admin-tab').forEach(function(tabBtn){
 });
 
 document.getElementById('admin-logout-btn').addEventListener('click', function(){
-  adminSession.active = false;
-  updateAdminEditableState();
+  if(firebaseReady){ auth.signOut(); }
   closeAdminPanel();
 });
+
+/* ---- one-time cloud migration: pushes the built-in defaults into Firestore/Storage ---- */
+var adminSeedBtn = document.getElementById('admin-seed-btn');
+if(adminSeedBtn){
+  adminSeedBtn.addEventListener('click', function(){
+    if(!firebaseReady){ alert('Backend not configured yet.'); return; }
+    if(!confirm('This uploads the current default content, courses, and testimonials to your live backend. Run this once when first setting up. Continue?')){ return; }
+
+    adminSeedBtn.disabled = true;
+    adminSeedBtn.textContent = 'Uploading, please wait...';
+
+    var work = db.collection('content').doc('main').set({ text: defaultTextValues }, { merge: true });
+
+    classes.forEach(function(c, i){
+      work = work.then(function(){
+        var uploadFlyer = c.flyer
+          ? storage.ref().child('classes/' + c.id + '.jpg').put(base64ToBlob(c.flyer, 'image/jpeg'))
+              .then(function(snap){ return snap.ref.getDownloadURL(); })
+          : Promise.resolve(null);
+
+        return uploadFlyer.then(function(flyerUrl){
+          return db.collection('classes').doc(c.id).set({
+            title: c.title, pageTitle: c.pageTitle, duration: c.duration, desc: c.desc,
+            pageDesc: c.pageDesc, fee: c.fee, message: c.message, accent: c.accent,
+            icon: c.icon, num: c.num, order: i + 1, hidden: false, flyerUrl: flyerUrl
+          }, { merge: true });
+        });
+      });
+    });
+
+    testimonials.forEach(function(t, i){
+      work = work.then(function(){
+        return storage.ref().child('testimonials/' + t.id + '.jpg').put(base64ToBlob(t.img, 'image/jpeg'))
+          .then(function(snap){ return snap.ref.getDownloadURL(); })
+          .then(function(imgUrl){
+            return db.collection('testimonials').doc(t.id).set({
+              imgUrl: imgUrl, alt: t.alt, order: i + 1, hidden: false
+            }, { merge: true });
+          });
+      });
+    });
+
+    work.then(function(){
+      alert('Done! Your site is now live from the cloud backend. Reloading...');
+      location.reload();
+    }).catch(function(err){
+      alert('Something went wrong: ' + err.message);
+      adminSeedBtn.disabled = false;
+      adminSeedBtn.textContent = 'Push My Site to the Cloud (one-time setup)';
+    });
+  });
+}
 
 /* ---- content tab ---- */
 function renderAdminContentFields(){
   var container = document.getElementById('admin-content-fields');
   container.innerHTML = '';
+  var source = liveText || defaultTextValues;
   document.querySelectorAll('[data-editable]').forEach(function(el){
     var key = el.getAttribute('data-editable');
     var label = el.getAttribute('data-label') || key;
-    var value = adminOverrides.text[key] !== undefined ? adminOverrides.text[key] : defaultTextValues[key];
+    var value = source[key] !== undefined ? source[key] : defaultTextValues[key];
 
     var field = document.createElement('div');
     field.className = 'admin-field';
@@ -533,40 +632,33 @@ function renderAdminContentFields(){
 }
 
 document.getElementById('admin-save-content').addEventListener('click', function(){
+  if(!firebaseReady){ alert('Backend not configured yet.'); return; }
+  var updates = {};
   document.querySelectorAll('#admin-content-fields [data-field-key]').forEach(function(input){
-    adminOverrides.text[input.getAttribute('data-field-key')] = input.value;
+    updates[input.getAttribute('data-field-key')] = input.value;
   });
-  saveOverrides();
-  applyTextOverrides();
+  db.collection('content').doc('main').set({ text: updates }, { merge: true });
 });
 
 document.getElementById('admin-reset-content').addEventListener('click', function(){
-  adminOverrides.text = {};
-  saveOverrides();
-  document.querySelectorAll('[data-editable]').forEach(function(el){
-    el.textContent = defaultTextValues[el.getAttribute('data-editable')];
-  });
-  renderAdminContentFields();
+  if(!firebaseReady){ alert('Backend not configured yet.'); return; }
+  db.collection('content').doc('main').set({ text: defaultTextValues }, { merge: true });
 });
 
 /* ---- courses tab ---- */
 var editingCourseId = null;
-var editingCourseIsCustom = false;
-var pendingFlyerDataUrl = null;
-
-var PLACEHOLDER_FLYER = 'data:image/svg+xml;utf8,' + encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="%231a2a22"/><text x="150" y="200" fill="%236FDDB3" font-size="16" text-anchor="middle" font-family="Arial">No image yet</text></svg>'
-);
-
-function courseFlyerSrc(c){
-  return c.flyerDataUrl ? c.flyerDataUrl : ("data:image/jpeg;base64," + c.flyer);
-}
+var pendingFlyerFile = null;
 
 function renderAdminCoursesList(){
   var container = document.getElementById('admin-courses-list');
   container.innerHTML = '';
+
+  if(liveClasses === null){
+    container.innerHTML = '<p class="admin-note">Nothing in the cloud yet. Use "Push My Site to the Cloud" below to get started, then come back here to edit.</p>';
+    return;
+  }
+
   getRenderClasses().forEach(function(c){
-    var isCustom = adminOverrides.customClasses.some(function(x){ return x.id === c.id; });
     var row = document.createElement('div');
     row.className = 'admin-list-item';
     row.innerHTML =
@@ -592,12 +684,11 @@ var ceFlyerFile = document.getElementById('ce-flyer-file');
 var ceFlyerPreview = document.getElementById('ce-flyer-preview');
 
 function openCourseEditModal(id){
-  pendingFlyerDataUrl = null;
+  pendingFlyerFile = null;
   ceFlyerFile.value = '';
 
   if(id === null){
     editingCourseId = null;
-    editingCourseIsCustom = true;
     document.getElementById('course-edit-title').textContent = 'Add Course';
     ceTitle.value = '';
     ceDuration.value = '';
@@ -610,14 +701,13 @@ function openCourseEditModal(id){
     var c = classesById[id];
     if(!c){ return; }
     editingCourseId = id;
-    editingCourseIsCustom = adminOverrides.customClasses.some(function(x){ return x.id === id; });
     document.getElementById('course-edit-title').textContent = 'Edit Course';
-    ceTitle.value = c.title.replace(/&amp;/g, '&');
-    ceDuration.value = c.duration;
-    ceDesc.value = c.desc;
-    cePagedesc.value = c.pageDesc;
-    ceFee.value = c.fee;
-    ceMessage.value = c.message;
+    ceTitle.value = (c.title || '').replace(/&amp;/g, '&');
+    ceDuration.value = c.duration || '';
+    ceDesc.value = c.desc || '';
+    cePagedesc.value = c.pageDesc || '';
+    ceFee.value = c.fee || '';
+    ceMessage.value = c.message || '';
     ceFlyerPreview.src = courseFlyerSrc(c);
     ceFlyerPreview.style.display = 'block';
   }
@@ -631,16 +721,17 @@ function closeCourseEditModal(){
 ceFlyerFile.addEventListener('change', function(){
   var file = ceFlyerFile.files[0];
   if(!file){ return; }
+  pendingFlyerFile = file;
   var reader = new FileReader();
   reader.onload = function(e){
-    pendingFlyerDataUrl = e.target.result;
-    ceFlyerPreview.src = pendingFlyerDataUrl;
+    ceFlyerPreview.src = e.target.result;
     ceFlyerPreview.style.display = 'block';
   };
   reader.readAsDataURL(file);
 });
 
 document.getElementById('admin-add-course').addEventListener('click', function(){
+  if(liveClasses === null){ alert('Push your site to the cloud first (see the note above the list).'); return; }
   openCourseEditModal(null);
 });
 
@@ -650,6 +741,7 @@ courseEditModal.addEventListener('click', function(e){
 });
 
 document.getElementById('course-edit-save').addEventListener('click', function(){
+  if(!firebaseReady){ alert('Backend not configured yet.'); return; }
   var title = ceTitle.value.trim();
   if(!title){ ceTitle.focus(); return; }
 
@@ -663,34 +755,34 @@ document.getElementById('course-edit-save').addEventListener('click', function()
     message: ceMessage.value.trim()
   };
 
-  if(editingCourseId === null){
-    var accents = ['emerald', 'rose', 'gold'];
-    var newClass = Object.assign({
-      id: 'custom-' + Date.now(),
-      num: String(getRenderClasses().length + 1).padStart(2, '0'),
-      accent: accents[Math.floor(Math.random() * accents.length)],
-      icon: '<path d="M6 6l12 12M18 6L6 18"/><circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/>',
-      flyerDataUrl: pendingFlyerDataUrl || PLACEHOLDER_FLYER
-    }, fields);
-    adminOverrides.customClasses.push(newClass);
-  } else if(editingCourseIsCustom){
-    adminOverrides.customClasses = adminOverrides.customClasses.map(function(c){
-      if(c.id !== editingCourseId){ return c; }
-      var updated = Object.assign({}, c, fields);
-      if(pendingFlyerDataUrl){ updated.flyerDataUrl = pendingFlyerDataUrl; }
-      return updated;
-    });
-  } else {
-    adminOverrides.classEdits[editingCourseId] = Object.assign(
-      {}, adminOverrides.classEdits[editingCourseId] || {}, fields,
-      pendingFlyerDataUrl ? { flyerDataUrl: pendingFlyerDataUrl } : {}
-    );
-  }
+  var id = editingCourseId || ('custom-' + Date.now());
+  var saveBtn = document.getElementById('course-edit-save');
+  saveBtn.disabled = true;
 
-  saveOverrides();
-  renderClasses();
-  renderAdminCoursesList();
-  closeCourseEditModal();
+  var uploadStep = pendingFlyerFile
+    ? storage.ref().child('classes/' + id + '.jpg').put(pendingFlyerFile).then(function(snap){ return snap.ref.getDownloadURL(); })
+    : Promise.resolve(null);
+
+  uploadStep.then(function(flyerUrl){
+    if(flyerUrl){ fields.flyerUrl = flyerUrl; }
+
+    if(editingCourseId === null){
+      var accents = ['emerald', 'rose', 'gold'];
+      fields.accent = accents[Math.floor(Math.random() * accents.length)];
+      fields.icon = '<path d="M6 6l12 12M18 6L6 18"/><circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/>';
+      fields.num = String(getRenderClasses().length + 1).padStart(2, '0');
+      fields.order = getRenderClasses().length + 1;
+      fields.hidden = false;
+    }
+
+    return db.collection('classes').doc(id).set(fields, { merge: true });
+  }).then(function(){
+    saveBtn.disabled = false;
+    closeCourseEditModal();
+  }).catch(function(err){
+    saveBtn.disabled = false;
+    alert('Could not save: ' + err.message);
+  });
 });
 
 document.addEventListener('click', function(e){
@@ -701,32 +793,24 @@ document.addEventListener('click', function(e){
   }
   var delBtn = e.target.closest('[data-admin-delete-course]');
   if(delBtn){
+    if(!firebaseReady){ return; }
     var id = delBtn.getAttribute('data-admin-delete-course');
-    var isCustom = adminOverrides.customClasses.some(function(c){ return c.id === id; });
-    if(isCustom){
-      adminOverrides.customClasses = adminOverrides.customClasses.filter(function(c){ return c.id !== id; });
-    } else if(adminOverrides.hiddenClasses.indexOf(id) === -1){
-      adminOverrides.hiddenClasses.push(id);
+    if(confirm('Delete this course for everyone? This cannot be undone.')){
+      db.collection('classes').doc(id).delete();
     }
-    saveOverrides();
-    renderClasses();
-    renderAdminCoursesList();
   }
-});
-
-document.getElementById('admin-reset-courses').addEventListener('click', function(){
-  adminOverrides.classEdits = {};
-  adminOverrides.hiddenClasses = [];
-  adminOverrides.customClasses = [];
-  saveOverrides();
-  renderClasses();
-  renderAdminCoursesList();
 });
 
 /* ---- testimonials tab ---- */
 function renderAdminTestimonialsList(){
   var container = document.getElementById('admin-testimonials-list');
   container.innerHTML = '';
+
+  if(liveTestimonials === null){
+    container.innerHTML = '<p class="admin-note">Nothing in the cloud yet. Use "Push My Site to the Cloud" in the Content tab to get started.</p>';
+    return;
+  }
+
   getRenderTestimonials().forEach(function(t){
     var row = document.createElement('div');
     row.className = 'admin-list-item';
@@ -734,7 +818,6 @@ function renderAdminTestimonialsList(){
       '<img src="' + testimonialImgSrc(t) + '" alt="" />' +
       '<div class="admin-list-text">' +
         '<div class="admin-list-title">' + (t.alt || 'Testimonial') + '</div>' +
-        '<div class="admin-list-sub">' + (t.type === 'custom' ? 'Added by admin' : 'Default') + '</div>' +
       '</div>' +
       '<button type="button" class="admin-list-btn danger" data-delete-testimonial="' + t.id + '">Delete</button>';
     container.appendChild(row);
@@ -742,41 +825,50 @@ function renderAdminTestimonialsList(){
 }
 
 document.getElementById('admin-add-testimonial-file').addEventListener('change', function(e){
+  if(!firebaseReady){ alert('Backend not configured yet.'); return; }
+  if(liveTestimonials === null){ alert('Push your site to the cloud first (see the Content tab).'); e.target.value = ''; return; }
+
   var file = e.target.files[0];
   if(!file){ return; }
-  var reader = new FileReader();
-  reader.onload = function(ev){
-    adminOverrides.customTestimonials.push({
-      id: 'custom-' + Date.now(),
-      type: 'custom',
-      img: ev.target.result,
-      alt: 'Student testimonial'
-    });
-    saveOverrides();
-    renderTestimonials();
-    renderAdminTestimonialsList();
-    restartTimer();
-    e.target.value = '';
-  };
-  reader.readAsDataURL(file);
+
+  var id = 'custom-' + Date.now();
+  storage.ref().child('testimonials/' + id + '.jpg').put(file)
+    .then(function(snap){ return snap.ref.getDownloadURL(); })
+    .then(function(imgUrl){
+      return db.collection('testimonials').doc(id).set({
+        imgUrl: imgUrl,
+        alt: 'Student testimonial',
+        order: getRenderTestimonials().length + 1,
+        hidden: false
+      });
+    })
+    .then(function(){ e.target.value = ''; })
+    .catch(function(err){ alert('Could not upload: ' + err.message); });
 });
 
-document.getElementById('admin-reset-testimonials').addEventListener('click', function(){
-  adminOverrides.hiddenTestimonials = [];
-  adminOverrides.customTestimonials = [];
-  saveOverrides();
-  renderTestimonials();
-  renderAdminTestimonialsList();
-  restartTimer();
+document.addEventListener('click', function(e){
+  var delT = e.target.closest('[data-delete-testimonial]');
+  if(delT){
+    if(!firebaseReady){ return; }
+    var tid = delT.getAttribute('data-delete-testimonial');
+    if(confirm('Delete this testimonial for everyone? This cannot be undone.')){
+      db.collection('testimonials').doc(tid).delete();
+    }
+  }
 });
 
-/* ---- export ---- */
+/* ---- export (handy backup snapshot, not required for the site to work) ---- */
 document.getElementById('admin-export-btn').addEventListener('click', function(){
-  var blob = new Blob([JSON.stringify(adminOverrides, null, 2)], { type: 'application/json' });
+  var snapshot = {
+    text: liveText || defaultTextValues,
+    classes: liveClasses || classes,
+    testimonials: liveTestimonials || testimonials
+  };
+  var blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
-  a.download = 'isew-content-changes.json';
+  a.download = 'isew-content-backup.json';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
