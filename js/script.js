@@ -59,6 +59,7 @@ function base64ToBlob(b64, mime){
 var classes = [
     {
       id: "corset",
+      selarLink: "https://selar.com/t715133ap6",
       num: "01",
       title: "Bustier &amp; Corset Masterclass",
       pageTitle: "Bustier and Corset Masterclass",
@@ -73,6 +74,7 @@ var classes = [
     },
     {
       id: "blazer",
+      selarLink: "https://selar.com/48784j",
       num: "02",
       title: "Blazer Class",
       pageTitle: "Blazer Class",
@@ -87,6 +89,7 @@ var classes = [
     },
     {
       id: "pant",
+      selarLink: "https://selar.com/1p87b1",
       num: "03",
       title: "A-Z Pant Masterclass",
       pageTitle: "A to Z Pant Masterclass",
@@ -101,6 +104,7 @@ var classes = [
     },
     {
       id: "beading",
+      selarLink: "https://selar.com/7c7vfuk3p0",
       num: "04",
       title: "Online Beading Class",
       pageTitle: "Online Beading Class",
@@ -115,6 +119,7 @@ var classes = [
     },
     {
       id: "hippad",
+      selarLink: "https://selar.com/903037",
       num: "05",
       title: "Butt &amp; Hip Pad Class",
       pageTitle: "Butt and Hip Pad Class",
@@ -213,6 +218,7 @@ var classes = [
   var overlayDesc = document.getElementById('course-desc');
   var overlayFee = document.getElementById('course-fee');
   var overlayCta = document.getElementById('course-cta');
+  var overlaySelarCta = document.getElementById('course-selar-cta');
   var currentCourseId = null;
 
   function openCourse(id){
@@ -225,6 +231,12 @@ var classes = [
     overlayDesc.textContent = c.pageDesc;
     overlayFee.textContent = c.fee;
     overlayCta.href = "https://wa.me/message/E4JYP5WY55ONP1?text=" + encodeURIComponent(c.message);
+    if(c.selarLink){
+      overlaySelarCta.href = c.selarLink;
+      overlaySelarCta.style.display = 'block';
+    } else {
+      overlaySelarCta.style.display = 'none';
+    }
     overlay.classList.add('active');
     overlay.scrollTop = 0;
     document.body.style.overflow = 'hidden';
@@ -582,7 +594,7 @@ if(adminSeedBtn){
         return uploadFlyer.then(function(flyerUrl){
           return db.collection('classes').doc(c.id).set({
             title: c.title, pageTitle: c.pageTitle, duration: c.duration, desc: c.desc,
-            pageDesc: c.pageDesc, fee: c.fee, message: c.message, accent: c.accent,
+            pageDesc: c.pageDesc, fee: c.fee, message: c.message, accent: c.accent, selarLink: c.selarLink || '',
             icon: c.icon, num: c.num, order: i + 1, hidden: false, flyerUrl: flyerUrl
           }, { merge: true });
         });
@@ -680,6 +692,7 @@ var ceDesc = document.getElementById('ce-desc');
 var cePagedesc = document.getElementById('ce-pagedesc');
 var ceFee = document.getElementById('ce-fee');
 var ceMessage = document.getElementById('ce-message');
+var ceSelarLink = document.getElementById('ce-selarlink');
 var ceFlyerFile = document.getElementById('ce-flyer-file');
 var ceFlyerPreview = document.getElementById('ce-flyer-preview');
 
@@ -696,6 +709,7 @@ function openCourseEditModal(id){
     cePagedesc.value = '';
     ceFee.value = '';
     ceMessage.value = '';
+    ceSelarLink.value = '';
     ceFlyerPreview.style.display = 'none';
   } else {
     var c = classesById[id];
@@ -708,6 +722,7 @@ function openCourseEditModal(id){
     cePagedesc.value = c.pageDesc || '';
     ceFee.value = c.fee || '';
     ceMessage.value = c.message || '';
+    ceSelarLink.value = c.selarLink || '';
     ceFlyerPreview.src = courseFlyerSrc(c);
     ceFlyerPreview.style.display = 'block';
   }
@@ -752,7 +767,8 @@ document.getElementById('course-edit-save').addEventListener('click', function()
     desc: ceDesc.value.trim(),
     pageDesc: cePagedesc.value.trim() || ceDesc.value.trim(),
     fee: ceFee.value.trim(),
-    message: ceMessage.value.trim()
+    message: ceMessage.value.trim(),
+    selarLink: ceSelarLink.value.trim()
   };
 
   var id = editingCourseId || ('custom-' + Date.now());

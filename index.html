@@ -11,7 +11,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="css/styles.css">
-</head>
 
 <body>
 
@@ -308,7 +307,10 @@
   </div>
 
   <div class="admin-tab-panel active" id="admin-tab-content">
-    <p class="admin-help">Edit any text below, then press Save. Changes appear on this device immediately.</p>
+    <p class="admin-help">Edit any text below, then press Save. Changes go live for every visitor immediately.</p>
+    <div class="admin-actions-row">
+      <button type="button" class="btn-outline" id="admin-seed-btn">Push My Site to the Cloud (one-time setup)</button>
+    </div>
     <div id="admin-content-fields"></div>
     <div class="admin-actions-row">
       <button type="button" class="btn-gold" id="admin-save-content">Save Text Changes</button>
@@ -338,7 +340,7 @@
   <div class="admin-panel-footer">
     <button type="button" class="btn-outline" id="admin-export-btn">Export My Changes (JSON)</button>
     <button type="button" class="btn-outline" id="admin-logout-btn">Log Out</button>
-    <p class="admin-note">Changes save to this browser only. Export and send this file to your developer to make changes live for every visitor.</p>
+    <p class="admin-note">Changes here are saved to your live backend and go out to every visitor right away.</p>
   </div>
 </div>
 
@@ -373,6 +375,10 @@
         <textarea id="ce-message" placeholder="Message sent to Gracy when someone taps this course"></textarea>
       </div>
       <div>
+        <label>Selar purchase link (optional)</label>
+        <input type="text" id="ce-selarlink" placeholder="https://selar.com/..." />
+      </div>
+      <div>
         <label>Flyer image</label>
         <input type="file" id="ce-flyer-file" accept="image/*" />
         <img id="ce-flyer-preview" style="display:none; margin-top:10px; max-width:140px; border-radius:6px;" />
@@ -405,18 +411,18 @@
       <span class="value" id="course-fee"></span>
     </div>
     <a class="btn-gold course-cta" id="course-cta" href="#" target="_blank" rel="noopener">Message Gracy on WhatsApp</a>
+    <a class="btn-outline course-cta" id="course-selar-cta" href="#" target="_blank" rel="noopener" style="display:none; margin-top:12px;">Buy Now on Selar</a>
   </div>
 </div>
 
-<!-- Firebase App (The core Firebase SDK) -->
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<!-- Firebase Auth, Firestore, and Storage -->
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+<!-- Firebase (backend: database, image storage, admin login) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 
-<!-- Your Configuration and Main Script (Non-module) -->
 <script type="module" src="js/firebase-config.js"></script>
 <script type="module" src="js/script.js"></script>
+
 </body>
 </html>
