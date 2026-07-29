@@ -20,6 +20,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
+<!--
+  Critical, inline (not in styles.css) on purpose: this must apply the instant
+  the HTML is parsed, before any external file has a chance to load — otherwise
+  the built-in default text/courses/testimonials flash on screen for a moment
+  on a visitor's very first (uncached) page load.
+-->
+<style>
+  body.content-loading [data-editable],
+  body.content-loading #class-grid,
+  body.content-loading #t-slideshow,
+  body.content-loading #t-dots{
+    opacity:0 !important;
+  }
+</style>
+
 <link rel="stylesheet" href="css/styles.css">
 </head>
 
