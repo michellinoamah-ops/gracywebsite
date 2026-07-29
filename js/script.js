@@ -1,4 +1,18 @@
 /* ================= FIREBASE BACKEND ================= */
+/* WhatsApp number used across the site. The old "wa.me/message/CODE" shortlink
+   format does not reliably honor a pre-filled ?text= message on every device
+   or WhatsApp client — the phone-number based format below does, consistently. */
+var WHATSAPP_NUMBER = "2348059744860"; // TODO: confirm this is Gracy's correct WhatsApp number
+function waLinkFor(message){
+  return "https://wa.me/" + WHATSAPP_NUMBER + (message ? ("?text=" + encodeURIComponent(message)) : "");
+}
+(function syncStaticWhatsAppLinks(){
+  var heroLink = document.getElementById('hero-whatsapp-link');
+  var contactLink = document.getElementById('contact-whatsapp-link');
+  if(heroLink){ heroLink.href = waLinkFor(); }
+  if(contactLink){ contactLink.href = waLinkFor(); }
+})();
+
 var firebaseReady = false;
 var db = null, auth = null, storage = null;
 
@@ -23,6 +37,21 @@ var ADMIN_EMAIL = (window.firebaseConfig && window.firebaseConfig.adminEmail) ||
 
 var adminSession = { active: false };
 
+/* ---- content-loading gate: prevents a flash of default content on refresh ---- */
+var contentReady = { text: !firebaseReady, classes: !firebaseReady, testimonials: !firebaseReady };
+function markReady(key){
+  contentReady[key] = true;
+  if(contentReady.text && contentReady.classes && contentReady.testimonials){
+    document.body.classList.remove('content-loading');
+  }
+}
+if(!firebaseReady){
+  // Nothing to wait for — show the built-in defaults right away.
+  document.body.classList.remove('content-loading');
+}
+// Safety net: never leave the page hidden forever if the backend is slow/unreachable.
+setTimeout(function(){ document.body.classList.remove('content-loading'); }, 3000);
+
 var defaultTextValues = {};
 document.querySelectorAll('[data-editable]').forEach(function(el){
   defaultTextValues[el.getAttribute('data-editable')] = el.textContent.trim();
@@ -45,8 +74,9 @@ if(firebaseReady){
   db.collection('content').doc('main').onSnapshot(function(doc){
     liveText = doc.exists ? (doc.data().text || {}) : null;
     applyTextOverrides();
+    markReady('text');
     if(adminSession.active && typeof renderAdminContentFields === 'function'){ renderAdminContentFields(); }
-  }, function(err){ console.warn('content listener error:', err); });
+  }, function(err){ console.warn('content listener error:', err); markReady('text'); });
 }
 
 function base64ToBlob(b64, mime){
@@ -162,8 +192,9 @@ var classes = [
       snap.forEach(function(doc){ arr.push(Object.assign({ id: doc.id }, doc.data())); });
       liveClasses = arr.length ? arr : null;
       renderClasses();
+      markReady('classes');
       if(adminSession.active && typeof renderAdminCoursesList === 'function'){ renderAdminCoursesList(); }
-    }, function(err){ console.warn('classes listener error:', err); });
+    }, function(err){ console.warn('classes listener error:', err); markReady('classes'); });
   }
 
   function renderClasses(){
@@ -172,7 +203,7 @@ var classes = [
 
     getRenderClasses().forEach(function(c){
     classesById[c.id] = c;
-    var waLink = "https://wa.me/message/E4JYP5WY55ONP1?text=" + encodeURIComponent(c.message);
+    var waLink = waLinkFor(c.message);
 
     var card = document.createElement('a');
     card.href = "javascript:void(0)";
@@ -230,7 +261,7 @@ var classes = [
     overlayTitle.textContent = c.pageTitle;
     overlayDesc.textContent = c.pageDesc;
     overlayFee.textContent = c.fee;
-    overlayCta.href = "https://wa.me/message/E4JYP5WY55ONP1?text=" + encodeURIComponent(c.message);
+    overlayCta.href = waLinkFor(c.message);
     if(c.selarLink){
       overlaySelarCta.href = c.selarLink;
       overlaySelarCta.style.display = 'block';
@@ -302,8 +333,9 @@ var classes = [
       liveTestimonials = arr.length ? arr : null;
       renderTestimonials();
       restartTimer();
+      markReady('testimonials');
       if(adminSession.active && typeof renderAdminTestimonialsList === 'function'){ renderAdminTestimonialsList(); }
-    }, function(err){ console.warn('testimonials listener error:', err); });
+    }, function(err){ console.warn('testimonials listener error:', err); markReady('testimonials'); });
   }
 
   function renderTestimonials(){
@@ -421,7 +453,7 @@ var classes = [
         text += " " + message;
       }
 
-      var waLink = "https://wa.me/message/E4JYP5WY55ONP1?text=" + encodeURIComponent(text);
+      var waLink = waLinkFor(text);
       window.open(waLink, '_blank');
     });
   }
@@ -649,12 +681,16 @@ document.getElementById('admin-save-content').addEventListener('click', function
   document.querySelectorAll('#admin-content-fields [data-field-key]').forEach(function(input){
     updates[input.getAttribute('data-field-key')] = input.value;
   });
-  db.collection('content').doc('main').set({ text: updates }, { merge: true });
+  db.collection('content').doc('main').set({ text: updates }, { merge: true })
+    .then(function(){ alert('Saved. This is now live for every visitor.'); })
+    .catch(function(err){ alert('Could not save: ' + err.message); });
 });
 
 document.getElementById('admin-reset-content').addEventListener('click', function(){
   if(!firebaseReady){ alert('Backend not configured yet.'); return; }
-  db.collection('content').doc('main').set({ text: defaultTextValues }, { merge: true });
+  db.collection('content').doc('main').set({ text: defaultTextValues }, { merge: true })
+    .then(function(){ alert('Reset to default text.'); })
+    .catch(function(err){ alert('Could not reset: ' + err.message); });
 });
 
 /* ---- courses tab ---- */
@@ -812,7 +848,7 @@ document.addEventListener('click', function(e){
     if(!firebaseReady){ return; }
     var id = delBtn.getAttribute('data-admin-delete-course');
     if(confirm('Delete this course for everyone? This cannot be undone.')){
-      db.collection('classes').doc(id).delete();
+      db.collection('classes').doc(id).delete().catch(function(err){ alert('Could not delete: ' + err.message); });
     }
   }
 });
@@ -868,7 +904,7 @@ document.addEventListener('click', function(e){
     if(!firebaseReady){ return; }
     var tid = delT.getAttribute('data-delete-testimonial');
     if(confirm('Delete this testimonial for everyone? This cannot be undone.')){
-      db.collection('testimonials').doc(tid).delete();
+      db.collection('testimonials').doc(tid).delete().catch(function(err){ alert('Could not delete: ' + err.message); });
     }
   }
 });

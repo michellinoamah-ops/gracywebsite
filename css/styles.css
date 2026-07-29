@@ -10,6 +10,21 @@
   }
   *{ box-sizing:border-box; margin:0; padding:0; }
   html{ scroll-behavior:smooth; }
+
+  /* Hide anything sourced from live content/Firestore until the real
+     data (edited or default) has actually loaded, so a page refresh
+     never flashes the built-in defaults before showing an admin edit. */
+  [data-editable], #class-grid, #t-slideshow, #t-dots{
+    opacity:1;
+    transition:opacity .35s ease;
+  }
+  body.content-loading [data-editable],
+  body.content-loading #class-grid,
+  body.content-loading #t-slideshow,
+  body.content-loading #t-dots{
+    opacity:0;
+  }
+
   body{
     background:var(--ink);
     color:var(--cream);
@@ -24,6 +39,8 @@
 
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; scroll-behavior:auto !important; }
+    .hero-slide{ animation:none !important; opacity:0 !important; }
+    .hero-slide:first-child{ opacity:0.55 !important; }
   }
 
   a:focus-visible, button:focus-visible{
