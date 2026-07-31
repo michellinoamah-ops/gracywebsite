@@ -6,11 +6,11 @@
 
 <!-- Favicon / mobile home screen icons -->
 <link rel="icon" type="image/x-icon" href="favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="image/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="image/favicon-32x32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="image/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="192x192" href="image/android-chrome-192x192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="image/android-chrome-512x512.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="android-chrome-192x192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png">
 <link rel="manifest" href="site.webmanifest">
 <meta name="theme-color" content="#141414">
 <title>ISew with Gracy — Fashion Academy</title>
@@ -330,6 +330,7 @@
     <button type="button" class="admin-tab active" data-admin-tab="content">Content</button>
     <button type="button" class="admin-tab" data-admin-tab="courses">Courses</button>
     <button type="button" class="admin-tab" data-admin-tab="testimonials">Testimonials</button>
+    <button type="button" class="admin-tab" data-admin-tab="reviews">Reviews</button>
   </div>
 
   <div class="admin-tab-panel active" id="admin-tab-content">
@@ -361,6 +362,11 @@
     <div class="admin-actions-row">
       <button type="button" class="btn-outline" id="admin-reset-testimonials">Reset Testimonials to Default</button>
     </div>
+  </div>
+
+  <div class="admin-tab-panel" id="admin-tab-reviews">
+    <p class="admin-help">New reviews wait here until you approve them. Once approved, they appear publicly with the student's name, star rating, and the date/time they were written.</p>
+    <div id="admin-reviews-list"></div>
   </div>
 
   <div class="admin-panel-footer">
@@ -430,14 +436,57 @@
     <div class="course-flyer-wrap">
       <img id="course-flyer-img" src="" alt="" />
     </div>
+
     <h2 class="course-title" id="course-title"></h2>
+
+    <div class="course-meta-row" id="course-meta-row">
+      <span class="course-meta-pill course-rating-pill" id="course-rating-pill" style="display:none;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="#6FDDB3"><path d="M12 2l3.1 6.3 6.9 1-5 4.9L18.2 21 12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+        <span id="course-rating-value"></span>
+        <span class="course-rating-count" id="course-rating-count"></span>
+      </span>
+      <span class="course-meta-pill" id="course-level-pill" style="display:none;"><span id="course-level-value"></span></span>
+      <span class="course-meta-pill" id="course-duration-pill" style="display:none;"><span id="course-duration-value"></span></span>
+      <span class="course-meta-pill" id="course-enrolled-pill" style="display:none;"><span id="course-enrolled-value"></span> enrolled</span>
+    </div>
+
+    <div class="course-tags" id="course-tags"></div>
+
     <p class="course-desc" id="course-desc"></p>
+
     <div class="course-fee-box">
       <span class="label">Investment</span>
       <span class="value" id="course-fee"></span>
     </div>
     <a class="btn-gold course-cta" id="course-cta" href="#" target="_blank" rel="noopener">Message Gracy on WhatsApp</a>
     <a class="btn-outline course-cta" id="course-selar-cta" href="#" target="_blank" rel="noopener" style="display:none; margin-top:12px;">Buy Now on Selar</a>
+
+    <div class="course-gallery-section" id="course-gallery-section" style="display:none;">
+      <p class="course-section-heading">More from this class</p>
+      <div class="course-gallery-grid" id="course-gallery-grid"></div>
+    </div>
+
+    <div class="course-reviews-section">
+      <p class="course-section-heading">Reviews</p>
+      <div id="course-reviews-summary" class="course-reviews-summary" style="display:none;"></div>
+      <div id="course-reviews-list" class="course-reviews-list"></div>
+
+      <form id="course-review-form" class="course-review-form">
+        <p class="course-review-form-title">Leave a review</p>
+        <div class="course-star-picker" id="course-star-picker">
+          <button type="button" class="course-star" data-star="1" aria-label="1 star">★</button>
+          <button type="button" class="course-star" data-star="2" aria-label="2 stars">★</button>
+          <button type="button" class="course-star" data-star="3" aria-label="3 stars">★</button>
+          <button type="button" class="course-star" data-star="4" aria-label="4 stars">★</button>
+          <button type="button" class="course-star" data-star="5" aria-label="5 stars">★</button>
+        </div>
+        <input type="text" id="review-name" placeholder="Your name" required />
+        <textarea id="review-comment" placeholder="Tell others about your experience with this class..." required></textarea>
+        <button type="submit" class="btn-gold">Submit Review</button>
+        <p class="course-review-note">Reviews are checked by Gracy before they appear publicly.</p>
+        <p class="course-review-thanks" id="course-review-thanks" style="display:none;">Thank you! Your review has been sent for approval.</p>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -446,6 +495,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+
 <script type="module" src="js/firebase-config.js"></script>
 <script type="module" src="js/script.js"></script>
 

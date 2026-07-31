@@ -411,21 +411,17 @@
   }
   .card{
     position:relative;
-    display:block;
+    display:flex;
+    flex-direction:column;
     background:linear-gradient(180deg, #16211D 0%, #0D1512 100%);
     border:1px solid rgba(31,138,107,0.28);
     clip-path:polygon(0 0, calc(100% - 28px) 0, 100% 28px, 100% 100%, 0 100%);
-    padding:26px;
-    min-height:300px;
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
     cursor:pointer;
     transition:transform .5s cubic-bezier(.16,1,.3,1), border-color .4s ease, box-shadow .5s ease;
   }
   .card::before{
     content:'';
-    position:absolute; top:0; right:0;
+    position:absolute; top:0; right:0; z-index:2;
     width:28px; height:28px;
     background:linear-gradient(135deg, #141414 50%, #1A2A22 50%);
     border-bottom:1px solid rgba(31,138,107,0.35);
@@ -436,43 +432,74 @@
     border-color:rgba(31,138,107,0.7);
     box-shadow:0 30px 60px -25px rgba(0,0,0,0.7), 0 0 0 1px rgba(31,138,107,0.15);
   }
-  .card-top-row{
-    display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;
+  .card-image{
+    position:relative;
+    width:100%;
+    aspect-ratio:4/3;
+    overflow:hidden;
+    background:#0a0f0d;
   }
-  .card-icon{
-    width:34px; height:34px;
-    border-radius:9px;
-    background:rgba(31,138,107,0.1);
-    border:1px solid rgba(31,138,107,0.3);
-    display:flex; align-items:center; justify-content:center;
+  .card-image img{
+    width:100%; height:100%;
+    object-fit:cover;
+    display:block;
+    transition:transform .6s ease;
   }
-  .card-num{
+  .card:hover .card-image img{ transform:scale(1.06); }
+  .card-num-badge{
+    position:absolute; top:10px; left:10px; z-index:2;
     font-family:'Space Mono', monospace;
-    font-size:0.68rem;
-    color:rgba(255,255,255,0.35);
+    font-size:0.62rem; letter-spacing:0.08em;
+    color:var(--gold2);
+    background:rgba(10,15,13,0.8);
+    border:1px solid rgba(111,221,179,0.35);
+    padding:4px 9px; border-radius:4px;
+  }
+  .card-body{
+    padding:20px 22px 24px;
+    display:flex; flex-direction:column; flex:1;
   }
   .card h3{
     font-family:'Bodoni Moda', serif;
     font-weight:700;
-    font-size:1.5rem;
+    font-size:1.4rem;
     line-height:1.25;
   }
   .card .duration{
     font-family:'Space Mono', monospace;
     letter-spacing:0.2em;
-    font-size:0.62rem;
+    font-size:0.6rem;
     color:rgba(255,255,255,0.4);
-    margin-top:8px;
+    margin-top:7px;
   }
   .card .desc{
-    font-size:0.88rem;
+    font-size:0.86rem;
     color:rgba(255,255,255,0.7);
     font-weight:500;
-    margin-top:14px;
+    margin-top:12px;
     line-height:1.55;
   }
+  .card-rating{
+    display:flex; align-items:center; gap:7px;
+    margin-top:14px;
+    font-size:0.82rem;
+  }
+  .card-rating .stars{ letter-spacing:1px; }
+  .card-rating .star{ color:rgba(255,255,255,0.22); }
+  .card-rating .star.filled{ color:var(--gold2); }
+  .card-rating .rating-count{
+    color:rgba(255,255,255,0.5);
+    font-size:0.76rem;
+  }
+  .card-rating .no-reviews{
+    color:rgba(255,255,255,0.4);
+    font-size:0.76rem;
+    font-style:italic;
+  }
   .card-bottom{
-    margin-top:22px; padding-top:18px;
+    margin-top:auto; padding-top:18px;
+    padding-left:22px; padding-right:22px; padding-bottom:2px;
+    margin-left:-22px; margin-right:-22px;
     border-top:1px dashed rgba(31,138,107,0.25);
   }
   .fee{
@@ -494,9 +521,6 @@
   .accent-emerald h3{ color:var(--emerald); }
   .accent-rose h3{ color:var(--rose); }
   .accent-gold h3{ color:var(--gold2); }
-  .accent-emerald .card-icon svg{ stroke:var(--emerald); }
-  .accent-rose .card-icon svg{ stroke:var(--rose); }
-  .accent-gold .card-icon svg{ stroke:var(--gold2); }
 
   /* ---------- WHY / FEATURES ---------- */
   .why{
@@ -778,6 +802,127 @@
     width:100%; padding:17px 20px;
     font-size:0.9rem;
   }
+
+  /* ---------- COURSE META ROW (rating / level / duration / enrolled) ---------- */
+  .course-meta-row{
+    display:flex; flex-wrap:wrap; gap:8px;
+    margin-top:14px; margin-bottom:14px;
+  }
+  .course-meta-pill{
+    display:inline-flex; align-items:center; gap:5px;
+    font-family:'Space Mono', monospace;
+    font-size:0.7rem; color:rgba(255,255,255,0.75);
+    background:rgba(111,221,179,0.08);
+    border:1px solid rgba(111,221,179,0.25);
+    border-radius:999px;
+    padding:5px 12px;
+  }
+  .course-rating-pill{ color:var(--gold2); font-weight:700; }
+  .course-rating-count{ color:rgba(255,255,255,0.5); font-weight:400; margin-left:2px; }
+
+  .course-tags{
+    display:flex; flex-wrap:wrap; gap:8px;
+    margin-bottom:20px;
+  }
+  .course-tag{
+    font-size:0.72rem;
+    color:rgba(255,255,255,0.65);
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:999px;
+    padding:4px 12px;
+  }
+
+  /* ---------- COURSE GALLERY ---------- */
+  .course-section-heading{
+    font-family:'Bodoni Moda', serif;
+    font-style:italic;
+    font-weight:700;
+    font-size:1.4rem;
+    color:var(--cream);
+    margin:36px 0 16px;
+  }
+  .course-gallery-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(110px, 1fr));
+    gap:10px;
+  }
+  .course-gallery-grid img{
+    width:100%; height:110px; object-fit:cover;
+    border-radius:6px;
+    border:1px solid rgba(111,221,179,0.25);
+    cursor:pointer;
+    transition:transform .3s ease;
+  }
+  .course-gallery-grid img:hover{ transform:scale(1.04); }
+
+  /* ---------- COURSE REVIEWS ---------- */
+  .course-reviews-summary{
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:20px;
+  }
+  .course-reviews-summary .big-rating{
+    font-family:'Bodoni Moda', serif;
+    font-size:2rem; color:var(--gold2);
+  }
+  .course-reviews-summary .stars{ color:var(--gold2); font-size:1rem; letter-spacing:2px; }
+  .course-reviews-summary .count{ font-size:0.78rem; color:rgba(255,255,255,0.5); }
+
+  .course-reviews-list{ display:flex; flex-direction:column; gap:16px; margin-bottom:28px; }
+  .course-review-item{
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:6px;
+    padding:16px 18px;
+    background:rgba(255,255,255,0.02);
+  }
+  .course-review-item .review-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    gap:10px; margin-bottom:6px; flex-wrap:wrap;
+  }
+  .course-review-item .review-name{ font-weight:600; color:var(--cream); font-size:0.88rem; }
+  .course-review-item .review-stars{ color:var(--gold2); font-size:0.82rem; letter-spacing:1px; }
+  .course-review-item .review-date{
+    font-family:'Space Mono', monospace;
+    font-size:0.65rem; color:rgba(255,255,255,0.4);
+  }
+  .course-review-item .review-text{
+    font-size:0.86rem; color:rgba(255,255,255,0.75); line-height:1.55;
+  }
+  .course-reviews-empty{ font-size:0.85rem; color:rgba(255,255,255,0.45); margin-bottom:20px; }
+
+  .course-review-form{
+    border-top:1px dashed rgba(111,221,179,0.25);
+    padding-top:24px;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .course-review-form-title{
+    font-family:'Bodoni Moda', serif;
+    font-style:italic; font-weight:700;
+    font-size:1.1rem; color:var(--cream);
+  }
+  .course-star-picker{ display:flex; gap:6px; }
+  .course-star{
+    background:none; border:none; cursor:pointer;
+    font-size:1.6rem; line-height:1;
+    color:rgba(255,255,255,0.25);
+    padding:0; transition:color .2s ease, transform .2s ease;
+  }
+  .course-star:hover{ transform:scale(1.15); }
+  .course-star.active{ color:var(--gold2); }
+  .course-review-form input,
+  .course-review-form textarea{
+    width:100%;
+    background:rgba(111,221,179,0.05);
+    border:1px solid rgba(111,221,179,0.25);
+    border-radius:4px;
+    padding:12px 14px;
+    color:var(--cream);
+    font-family:'Manrope', Arial, sans-serif;
+    font-size:0.88rem;
+    outline:none;
+  }
+  .course-review-form textarea{ min-height:90px; resize:vertical; }
+  .course-review-note{ font-size:0.72rem; color:rgba(255,255,255,0.4); }
+  .course-review-thanks{ font-size:0.85rem; color:var(--gold2); }
 
   /* ---------- ADMIN: EDITABLE CONTENT ---------- */
   /* ---------- ADMIN: EDITABLE CONTENT ---------- */

@@ -90,6 +90,10 @@ var classes = [
     {
       id: "corset",
       selarLink: "https://selar.com/t715133ap6",
+      level: "",
+      tags: [],
+      enrolled: null,
+      gallery: [],
       num: "01",
       title: "Bustier &amp; Corset Masterclass",
       pageTitle: "Bustier and Corset Masterclass",
@@ -105,6 +109,10 @@ var classes = [
     {
       id: "blazer",
       selarLink: "https://selar.com/48784j",
+      level: "",
+      tags: [],
+      enrolled: null,
+      gallery: [],
       num: "02",
       title: "Blazer Class",
       pageTitle: "Blazer Class",
@@ -120,6 +128,10 @@ var classes = [
     {
       id: "pant",
       selarLink: "https://selar.com/1p87b1",
+      level: "",
+      tags: [],
+      enrolled: null,
+      gallery: [],
       num: "03",
       title: "A-Z Pant Masterclass",
       pageTitle: "A to Z Pant Masterclass",
@@ -135,6 +147,10 @@ var classes = [
     {
       id: "beading",
       selarLink: "https://selar.com/7c7vfuk3p0",
+      level: "",
+      tags: [],
+      enrolled: null,
+      gallery: [],
       num: "04",
       title: "Online Beading Class",
       pageTitle: "Online Beading Class",
@@ -150,6 +166,10 @@ var classes = [
     {
       id: "hippad",
       selarLink: "https://selar.com/903037",
+      level: "",
+      tags: [],
+      enrolled: null,
+      gallery: [],
       num: "05",
       title: "Butt &amp; Hip Pad Class",
       pageTitle: "Butt and Hip Pad Class",
@@ -167,6 +187,38 @@ var classes = [
   var grid = document.getElementById('class-grid');
   var classesById = {};
   var liveClasses = null;
+  var livePublicReviews = null;
+
+  function classReviews(classId){
+    return (livePublicReviews || []).filter(function(r){ return r.classId === classId; });
+  }
+
+  function classRatingStats(classId){
+    var revs = classReviews(classId);
+    if(!revs.length){ return null; }
+    var sum = revs.reduce(function(s, r){ return s + (r.rating || 0); }, 0);
+    return { avg: sum / revs.length, count: revs.length };
+  }
+
+  function formatReviewDate(review){
+    try{
+      var d = review.createdAt && review.createdAt.toDate ? review.createdAt.toDate() : new Date();
+      var datePart = d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      var timePart = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+      return datePart + ' \u00B7 ' + timePart;
+    } catch(e){ return ''; }
+  }
+
+  if(firebaseReady){
+    db.collection('reviews').where('approved', '==', true).onSnapshot(function(snap){
+      var arr = [];
+      snap.forEach(function(doc){ arr.push(Object.assign({ id: doc.id }, doc.data())); });
+      livePublicReviews = arr;
+      renderClasses();
+      if(currentCourseId){ renderCourseReviews(currentCourseId); }
+      if(adminSession.active && typeof renderAdminReviewsList === 'function'){ renderAdminReviewsList(); }
+    }, function(err){ console.warn('reviews listener error:', err); });
+  }
 
   var PLACEHOLDER_FLYER = 'data:image/svg+xml;utf8,' + encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="%231a2a22"/><text x="150" y="200" fill="%236FDDB3" font-size="16" text-anchor="middle" font-family="Arial">No image yet</text></svg>'
@@ -212,24 +264,36 @@ var classes = [
     card.dataset.classId = c.id;
 
     card.innerHTML =
-      '<div>' +
-        '<div class="card-top-row">' +
-          '<div class="card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' + c.icon + '</svg></div>' +
-          '<span class="card-num">N\u00B0 ' + c.num + '</span>' +
-        '</div>' +
+      '<div class="card-image">' +
+        '<img src="' + courseFlyerSrc(c) + '" alt="' + c.title.replace(/</g, '&lt;') + ' flyer" loading="lazy" />' +
+        '<span class="card-num-badge">N\u00B0 ' + c.num + '</span>' +
+        '<button type="button" class="admin-delete card-delete" data-delete-class="' + c.id + '" aria-label="Delete this class">\u00D7</button>' +
+      '</div>' +
+      '<div class="card-body">' +
         '<h3>' + c.title + '</h3>' +
         '<p class="duration">' + c.duration + '</p>' +
         '<p class="desc">' + c.desc + '</p>' +
-      '</div>' +
-      '<div class="card-bottom">' +
-        '<p class="fee">' + c.fee + '</p>' +
-        '<span class="card-cta">View class details' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none">' +
-            '<path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' +
-          '</svg>' +
-        '</span>' +
-      '</div>' +
-      '<button type="button" class="admin-delete card-delete" data-delete-class="' + c.id + '" aria-label="Delete this class">\u00D7</button>';
+        (function(){
+          var stats = classRatingStats(c.id);
+          if(!stats){
+            return '<div class="card-rating"><span class="no-reviews">No reviews yet</span></div>';
+          }
+          var rounded = Math.round(stats.avg);
+          var stars = '';
+          for(var i = 1; i <= 5; i++){
+            stars += '<span class="star' + (i <= rounded ? ' filled' : '') + '">\u2605</span>';
+          }
+          return '<div class="card-rating"><span class="stars">' + stars + '</span><span class="rating-count">(' + stats.count + ')</span></div>';
+        })() +
+        '<div class="card-bottom">' +
+          '<p class="fee">' + c.fee + '</p>' +
+          '<span class="card-cta">View class details' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none">' +
+              '<path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+            '</svg>' +
+          '</span>' +
+        '</div>' +
+      '</div>';
 
     card.addEventListener('click', function(e){
       if(e.target.closest('[data-delete-class]')){ return; }
@@ -250,6 +314,18 @@ var classes = [
   var overlayFee = document.getElementById('course-fee');
   var overlayCta = document.getElementById('course-cta');
   var overlaySelarCta = document.getElementById('course-selar-cta');
+  var ratingPill = document.getElementById('course-rating-pill');
+  var ratingValue = document.getElementById('course-rating-value');
+  var ratingCount = document.getElementById('course-rating-count');
+  var levelPill = document.getElementById('course-level-pill');
+  var levelValue = document.getElementById('course-level-value');
+  var durationPill = document.getElementById('course-duration-pill');
+  var durationValue = document.getElementById('course-duration-value');
+  var enrolledPill = document.getElementById('course-enrolled-pill');
+  var enrolledValue = document.getElementById('course-enrolled-value');
+  var tagsContainer = document.getElementById('course-tags');
+  var gallerySection = document.getElementById('course-gallery-section');
+  var galleryGrid = document.getElementById('course-gallery-grid');
   var currentCourseId = null;
 
   function openCourse(id){
@@ -268,6 +344,63 @@ var classes = [
     } else {
       overlaySelarCta.style.display = 'none';
     }
+
+    var stats = classRatingStats(id);
+    if(stats){
+      ratingValue.textContent = stats.avg.toFixed(1);
+      ratingCount.textContent = '(' + stats.count + ')';
+      ratingPill.style.display = 'inline-flex';
+    } else {
+      ratingPill.style.display = 'none';
+    }
+
+    if(c.level){
+      levelValue.textContent = c.level;
+      levelPill.style.display = 'inline-flex';
+    } else {
+      levelPill.style.display = 'none';
+    }
+
+    if(c.duration){
+      durationValue.textContent = c.duration;
+      durationPill.style.display = 'inline-flex';
+    } else {
+      durationPill.style.display = 'none';
+    }
+
+    if(c.enrolled){
+      enrolledValue.textContent = c.enrolled;
+      enrolledPill.style.display = 'inline-flex';
+    } else {
+      enrolledPill.style.display = 'none';
+    }
+
+    tagsContainer.innerHTML = '';
+    (c.tags || []).forEach(function(tag){
+      var span = document.createElement('span');
+      span.className = 'course-tag';
+      span.textContent = tag;
+      tagsContainer.appendChild(span);
+    });
+
+    var gallery = c.gallery || [];
+    if(gallery.length){
+      galleryGrid.innerHTML = '';
+      gallery.forEach(function(url){
+        var img = document.createElement('img');
+        img.src = url;
+        img.alt = c.pageTitle + ' gallery photo';
+        img.addEventListener('click', function(){ window.open(url, '_blank'); });
+        galleryGrid.appendChild(img);
+      });
+      gallerySection.style.display = 'block';
+    } else {
+      gallerySection.style.display = 'none';
+    }
+
+    renderCourseReviews(id);
+    resetReviewForm();
+
     overlay.classList.add('active');
     overlay.scrollTop = 0;
     document.body.style.overflow = 'hidden';
@@ -281,6 +414,100 @@ var classes = [
     // at any point without needing to know if admin mode is active yet.
     document.body.classList.toggle('admin-mode', adminSession.active === true);
   }
+
+  /* ---- course reviews: display + submission ---- */
+  var reviewsListEl = document.getElementById('course-reviews-list');
+  var reviewsSummaryEl = document.getElementById('course-reviews-summary');
+  var reviewForm = document.getElementById('course-review-form');
+  var reviewNameInput = document.getElementById('review-name');
+  var reviewCommentInput = document.getElementById('review-comment');
+  var reviewThanksEl = document.getElementById('course-review-thanks');
+  var starPicker = document.getElementById('course-star-picker');
+  var selectedRating = 0;
+
+  function renderCourseReviews(classId){
+    var revs = classReviews(classId).slice().sort(function(a, b){
+      var aTime = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
+      var bTime = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+      return bTime - aTime;
+    });
+
+    var stats = classRatingStats(classId);
+    if(stats){
+      reviewsSummaryEl.style.display = 'flex';
+      reviewsSummaryEl.innerHTML =
+        '<span class="big-rating">' + stats.avg.toFixed(1) + '</span>' +
+        '<span class="stars">' + '\u2605'.repeat(Math.round(stats.avg)) + '</span>' +
+        '<span class="count">' + stats.count + ' review' + (stats.count === 1 ? '' : 's') + '</span>';
+    } else {
+      reviewsSummaryEl.style.display = 'none';
+    }
+
+    reviewsListEl.innerHTML = '';
+    if(!revs.length){
+      reviewsListEl.innerHTML = '<p class="course-reviews-empty">No reviews yet. Be the first to share your experience.</p>';
+      return;
+    }
+    revs.forEach(function(r){
+      var item = document.createElement('div');
+      item.className = 'course-review-item';
+      item.innerHTML =
+        '<div class="review-head">' +
+          '<span class="review-name">' + (r.name || 'Anonymous').replace(/</g, '&lt;') + '</span>' +
+          '<span class="review-date">' + formatReviewDate(r) + '</span>' +
+        '</div>' +
+        '<div class="review-stars">' + '\u2605'.repeat(r.rating || 0) + '</div>' +
+        '<p class="review-text">' + (r.comment || '').replace(/</g, '&lt;') + '</p>';
+      reviewsListEl.appendChild(item);
+    });
+  }
+
+  function resetReviewForm(){
+    selectedRating = 0;
+    starPicker.querySelectorAll('.course-star').forEach(function(s){ s.classList.remove('active'); });
+    reviewNameInput.value = '';
+    reviewCommentInput.value = '';
+    reviewThanksEl.style.display = 'none';
+    reviewForm.style.display = 'flex';
+  }
+
+  starPicker.querySelectorAll('.course-star').forEach(function(starBtn){
+    starBtn.addEventListener('click', function(){
+      selectedRating = parseInt(starBtn.getAttribute('data-star'), 10);
+      starPicker.querySelectorAll('.course-star').forEach(function(s){
+        s.classList.toggle('active', parseInt(s.getAttribute('data-star'), 10) <= selectedRating);
+      });
+    });
+  });
+
+  reviewForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    if(!firebaseReady){ alert('Reviews aren\'t available yet on this preview.'); return; }
+    if(!currentCourseId){ return; }
+    if(selectedRating < 1){ alert('Please choose a star rating.'); return; }
+    var name = reviewNameInput.value.trim();
+    var comment = reviewCommentInput.value.trim();
+    if(!name || !comment){ return; }
+
+    var submitBtn = reviewForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+
+    db.collection('reviews').add({
+      classId: currentCourseId,
+      name: name,
+      rating: selectedRating,
+      comment: comment,
+      approved: false,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+      reviewForm.style.display = 'none';
+      reviewThanksEl.style.display = 'block';
+      submitBtn.disabled = false;
+    }).catch(function(err){
+      alert('Could not submit review: ' + err.message);
+      submitBtn.disabled = false;
+    });
+  });
 
   function closeCourse(){
     overlay.classList.remove('active');
@@ -566,10 +793,26 @@ adminLoginModal.addEventListener('click', function(e){
 });
 
 /* ---- react to real auth state (so admin stays in sync with the backend) ---- */
+var liveAllReviews = null;
+var allReviewsUnsubscribe = null;
+
 if(firebaseReady){
   auth.onAuthStateChanged(function(user){
     adminSession.active = !!user;
     updateAdminEditableState();
+
+    if(user){
+      allReviewsUnsubscribe = db.collection('reviews').onSnapshot(function(snap){
+        var arr = [];
+        snap.forEach(function(doc){ arr.push(Object.assign({ id: doc.id }, doc.data())); });
+        liveAllReviews = arr;
+        if(typeof renderAdminReviewsList === 'function'){ renderAdminReviewsList(); }
+      }, function(err){ console.warn('admin reviews listener error:', err); });
+    } else if(allReviewsUnsubscribe){
+      allReviewsUnsubscribe();
+      allReviewsUnsubscribe = null;
+      liveAllReviews = null;
+    }
   });
 }
 
@@ -581,6 +824,7 @@ function openAdminPanel(){
   renderAdminContentFields();
   renderAdminCoursesList();
   renderAdminTestimonialsList();
+  renderAdminReviewsList();
 }
 
 function closeAdminPanel(){
@@ -588,6 +832,70 @@ function closeAdminPanel(){
 }
 
 document.getElementById('admin-panel-close').addEventListener('click', closeAdminPanel);
+
+/* ---- reviews tab: approve / reject pending reviews ---- */
+function renderAdminReviewsList(){
+  var container = document.getElementById('admin-reviews-list');
+  if(!container){ return; }
+
+  if(liveAllReviews === null){
+    container.innerHTML = '<p class="admin-note">Loading reviews...</p>';
+    return;
+  }
+  if(!liveAllReviews.length){
+    container.innerHTML = '<p class="admin-note">No reviews have been submitted yet.</p>';
+    return;
+  }
+
+  var sorted = liveAllReviews.slice().sort(function(a, b){
+    if(a.approved !== b.approved){ return a.approved ? 1 : -1; }
+    var aTime = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
+    var bTime = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+    return bTime - aTime;
+  });
+
+  container.innerHTML = '';
+  sorted.forEach(function(r){
+    var course = classesById[r.classId];
+    var courseTitle = course ? course.title : (r.classId || 'Unknown class');
+    var stars = '\u2605'.repeat(r.rating || 0) + '\u2606'.repeat(5 - (r.rating || 0));
+
+    var row = document.createElement('div');
+    row.className = 'admin-list-item admin-review-item';
+    row.innerHTML =
+      '<div class="admin-list-text">' +
+        '<div class="admin-list-title">' + (r.name || 'Anonymous').replace(/</g, '&lt;') + ' \u2014 ' + stars + '</div>' +
+        '<div class="admin-list-sub">' + courseTitle + ' \u00B7 ' + formatReviewDate(r) + (r.approved ? ' \u00B7 Approved' : ' \u00B7 Pending') + '</div>' +
+        '<div class="admin-review-text">' + (r.comment || '').replace(/</g, '&lt;') + '</div>' +
+      '</div>' +
+      (r.approved
+        ? '<button type="button" class="admin-list-btn danger" data-delete-review="' + r.id + '">Remove</button>'
+        : '<button type="button" class="admin-list-btn" data-approve-review="' + r.id + '">Approve</button>' +
+          '<button type="button" class="admin-list-btn danger" data-delete-review="' + r.id + '">Reject</button>'
+      );
+    container.appendChild(row);
+  });
+}
+
+document.addEventListener('click', function(e){
+  var approveBtn = e.target.closest('[data-approve-review]');
+  if(approveBtn){
+    if(!firebaseReady){ return; }
+    var approveId = approveBtn.getAttribute('data-approve-review');
+    db.collection('reviews').doc(approveId).set({ approved: true }, { merge: true })
+      .catch(function(err){ alert('Could not approve: ' + err.message); });
+    return;
+  }
+  var deleteReviewBtn = e.target.closest('[data-delete-review]');
+  if(deleteReviewBtn){
+    if(!firebaseReady){ return; }
+    var deleteId = deleteReviewBtn.getAttribute('data-delete-review');
+    if(confirm('Remove this review permanently?')){
+      db.collection('reviews').doc(deleteId).delete()
+        .catch(function(err){ alert('Could not remove: ' + err.message); });
+    }
+  }
+});
 
 document.querySelectorAll('.admin-tab').forEach(function(tabBtn){
   tabBtn.addEventListener('click', function(){
