@@ -142,7 +142,15 @@
       <h2>Stitched by <span class="plain">their own hands.</span></h2>
       <p data-editable="testi-sub" data-label="Testimonials subtitle">Real messages from students in Gracy's classes.</p>
     </div>
-    <div class="t-slideshow" id="t-slideshow"></div>
+    <div class="t-slideshow-wrap">
+      <button type="button" class="t-arrow t-arrow-prev" id="t-prev" aria-label="Previous testimonial">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="t-slideshow" id="t-slideshow"></div>
+      <button type="button" class="t-arrow t-arrow-next" id="t-next" aria-label="Next testimonial">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
     <div class="t-dots" id="t-dots"></div>
   </div>
 </section>
@@ -483,7 +491,8 @@
         <input type="text" id="review-name" placeholder="Your name" required />
         <textarea id="review-comment" placeholder="Tell others about your experience with this class..." required></textarea>
         <button type="submit" class="btn-gold">Submit Review</button>
-        <p class="course-review-thanks" id="course-review-thanks" style="display:none;">Thank you! Your review has been sent.</p>
+        <p class="course-review-note">Reviews are checked by Gracy before they appear publicly.</p>
+        <p class="course-review-thanks" id="course-review-thanks" style="display:none;">Thank you! Your review has been sent for approval.</p>
       </form>
     </div>
   </div>

@@ -611,12 +611,33 @@ var classes = [
     showTestimonial((tIndex + 1) % count);
   }
 
+  function prevTestimonial(){
+    var count = tSlideshow.querySelectorAll('.t-card').length;
+    if(!count){ return; }
+    showTestimonial((tIndex - 1 + count) % count);
+  }
+
   function restartTimer(){
     if(tTimer){ clearInterval(tTimer); }
     tTimer = setInterval(nextTestimonial, 7000);
   }
 
   restartTimer();
+
+  var tPrevBtn = document.getElementById('t-prev');
+  var tNextBtn = document.getElementById('t-next');
+  if(tPrevBtn){
+    tPrevBtn.addEventListener('click', function(){
+      prevTestimonial();
+      restartTimer();
+    });
+  }
+  if(tNextBtn){
+    tNextBtn.addEventListener('click', function(){
+      nextTestimonial();
+      restartTimer();
+    });
+  }
 
   /* ---------- PAGE NAVIGATION ---------- */
   var pageStack = ['page-home'];
