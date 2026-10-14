@@ -49,5 +49,10 @@
         }
       ]
     }
-  ]
+  ],
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "",
+  "buildCommand": "node scripts/verify-deployment.mjs",
+  "cleanUrls": false
 }
