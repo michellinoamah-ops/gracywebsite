@@ -1,0 +1,117 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function admin() { return request.auth != null && request.auth.token.admin == true && request.auth.token.email_verified == true; }
+  function short(value, max) { return value is string && value.size() > 0 && value.size() <= max; }
+  function publicDoc() { return resource.data.published == true; }
+  match /content/public {
+   allow read: if true;
+   allow create, update: if admin() && request.resource.data.keys().hasOnly(['headline','intro','email','whatsapp','origin'])
+    && short(request.resource.data.headline,180) && short(request.resource.data.intro,1200)
+    && short(request.resource.data.email,200) && request.resource.data.whatsapp.matches('^[0-9]{10,15}$');
+   allow delete: if admin();
+  }
+  // Legacy text overrides remain readable; writes require the verified admin role.
+  match /content/main { allow read: if true; allow write: if admin(); }
+  match /classes/{id} {
+   allow read: if admin() || publicDoc();
+   allow create, update: if admin() && short(request.resource.data.title,160)
+    && short(request.resource.data.description,5000) && short(request.resource.data.summary,600)
+    && short(request.resource.data.fee,200) && short(request.resource.data.image,2000)
+    && request.resource.data.checkout.matches('^https://(www\\.)?selar\\.com/.*$')
+    && request.resource.data.published is bool;
+   allow delete: if admin();
+  }
+  match /posts/{id} {
+   allow read: if admin() || publicDoc();
+   allow create, update: if admin() && request.resource.data.keys().hasOnly(['id','title','slug','category','date','excerpt','body','bodyHtml','image','published'])
+    && short(request.resource.data.title,180) && short(request.resource.data.excerpt,300)
+    && (!('bodyHtml' in request.resource.data) || (request.resource.data.bodyHtml is string && request.resource.data.bodyHtml.size() <= 60000))
+    && short(request.resource.data.body,20000) && short(request.resource.data.image,2000)
+    && request.resource.data.slug.matches('^[a-z0-9]+(-[a-z0-9]+)*$') && request.resource.data.slug.size() <= 100
+    && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+    && request.resource.data.published is bool;
+   allow delete: if admin();
+  }
+  match /testimonials/{id} {
+   allow read: if admin() || publicDoc();
+   allow create, update: if admin() && short(request.resource.data.image,2000)
+    && short(request.resource.data.alt,200) && request.resource.data.published is bool;
+   allow delete: if admin();
+  }
+  match /popups/{id} {
+   allow read: if admin() || publicDoc();
+   allow create, update: if admin() && request.resource.data.keys().hasOnly(['title','message','buttonLabel','url','page','delaySeconds','frequencyDays','priority','startsAt','endsAt','enabled','published','design'])
+    && short(request.resource.data.title,180) && short(request.resource.data.message,1200)
+    && short(request.resource.data.buttonLabel,200) && short(request.resource.data.url,2000)
+    && request.resource.data.delaySeconds is number && request.resource.data.delaySeconds >= 3 && request.resource.data.delaySeconds <= 120
+    && request.resource.data.frequencyDays is number && request.resource.data.frequencyDays >= 1 && request.resource.data.frequencyDays <= 365
+    && (!('design' in request.resource.data) || request.resource.data.design in ['atelier','sunrise','postcard','ribbon'])
+    && request.resource.data.enabled is bool && request.resource.data.published is bool;
+   allow delete: if admin();
+  }
+  match /reviews/{id} {
+   allow read: if admin() || resource.data.approved == true;
+   allow create: if request.auth != null && request.resource.data.keys().hasOnly(['owner','classId','name','rating','comment','approved','createdAt'])
+    && request.resource.data.owner == request.auth.uid
+    && request.resource.data.classId.matches('^[a-zA-Z0-9_-]{1,100}$')
+    && id == request.auth.uid + '_' + request.resource.data.classId
+    && exists(/databases/$(database)/documents/classes/$(request.resource.data.classId))
+    && get(/databases/$(database)/documents/classes/$(request.resource.data.classId)).data.published == true
+    && short(request.resource.data.name,80) && short(request.resource.data.comment,1500)
+    && request.resource.data.comment.size() >= 10 && request.resource.data.rating is int
+    && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+    && request.resource.data.approved == false && request.resource.data.createdAt == request.time;
+   // Admin may only approve a submitted review, not alter a student's statement.
+   allow update: if admin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['approved']) && request.resource.data.approved is bool;
+   allow delete: if admin();
+  }
+  match /commentLimits/{uid} {
+   allow read: if request.auth != null && (request.auth.uid == uid || admin());
+   allow create: if request.auth != null && request.auth.uid == uid
+    && request.resource.data.keys().hasOnly(['lastAt','nonce'])
+    && request.resource.data.nonce.matches('^[a-zA-Z0-9-]{1,100}$')
+    && request.resource.data.lastAt == request.time;
+   allow update: if request.auth != null && request.auth.uid == uid
+    && request.resource.data.keys().hasOnly(['lastAt','nonce'])
+    && request.resource.data.nonce.matches('^[a-zA-Z0-9-]{1,100}$')
+    && request.resource.data.lastAt == request.time
+    && resource.data.lastAt + duration.value(60, 's') <= request.time;
+   allow delete: if false;
+  }
+  match /comments/{id} {
+   allow read: if admin() || resource.data.approved == true;
+   allow create: if request.auth != null
+    && request.resource.data.keys().hasOnly(['owner','nonce','postId','name','comment','consent','approved','createdAt'])
+    && request.resource.data.owner == request.auth.uid
+    && request.resource.data.nonce.matches('^[a-zA-Z0-9-]{1,100}$')
+    && id == request.auth.uid + '_' + request.resource.data.nonce
+    && request.resource.data.postId.matches('^[a-zA-Z0-9_-]{1,100}$')
+    && exists(/databases/$(database)/documents/posts/$(request.resource.data.postId))
+    && get(/databases/$(database)/documents/posts/$(request.resource.data.postId)).data.published == true
+    && getAfter(/databases/$(database)/documents/commentLimits/$(request.auth.uid)).data.lastAt == request.time
+    && getAfter(/databases/$(database)/documents/commentLimits/$(request.auth.uid)).data.nonce == request.resource.data.nonce
+    && short(request.resource.data.name,80) && short(request.resource.data.comment,1500)
+    && request.resource.data.comment.size() >= 5 && request.resource.data.consent == true
+    && request.resource.data.approved == false && request.resource.data.createdAt == request.time;
+   allow update: if admin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['approved'])
+    && request.resource.data.approved is bool;
+   allow delete: if admin();
+  }
+  match /enquiries/{id} {
+   allow read: if admin();
+   allow create: if request.auth != null && id == request.auth.uid
+    && request.resource.data.keys().hasOnly(['owner','name','email','course','message','consent','status','createdAt'])
+    && request.resource.data.owner == request.auth.uid && short(request.resource.data.name,80)
+    && short(request.resource.data.email,200) && request.resource.data.email.matches('^[^ @]+@[^ @]+\\.[^ @]+$')
+    && short(request.resource.data.course,160) && short(request.resource.data.message,2000)
+    && request.resource.data.message.size() >= 10 && request.resource.data.consent == true
+    && request.resource.data.status == 'new' && request.resource.data.createdAt == request.time;
+   allow update: if admin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','tag'])
+    && request.resource.data.status in ['new','in-progress','resolved']
+    && (!('tag' in request.resource.data) || (request.resource.data.tag is string && request.resource.data.tag.size() <= 80));
+   allow delete: if admin();
+  }
+  match /{document=**} { allow read, write: if false; }
+ }
+}

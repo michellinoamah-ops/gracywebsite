@@ -1,0 +1,22 @@
+{
+  "name": "isew-with-gracy-modern",
+  "version": "2.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev-server.mjs",
+    "start": "node scripts/dev-server.mjs",
+    "build": "node scripts/run-python.mjs scripts/build.py",
+    "check": "node scripts/run-python.mjs scripts/check.py",
+    "test:rules": "node scripts/test-rules.mjs"
+  },
+  "devDependencies": {
+    "firebase-admin": "^13.5.0",
+    "firebase": "12.4.0",
+    "@firebase/rules-unit-testing": "^5.0.0",
+    "firebase-tools": "^14.19.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

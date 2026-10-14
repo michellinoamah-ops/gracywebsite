@@ -1,0 +1,39 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start ISew local server",
+      "type": "process",
+      "command": "node",
+      "args": [
+        "scripts/dev-server.mjs"
+      ],
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^(NEVER_MATCH_THIS)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^ISew local server starting",
+          "endsPattern": "ISew local server ready:.*"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Check ISew files",
+      "type": "process",
+      "command": "node",
+      "args": [
+        "scripts/run-python.mjs",
+        "scripts/check.py"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

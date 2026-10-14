@@ -1,0 +1,8 @@
+{
+  "liveServer.settings.root": "/dist",
+  "liveServer.settings.port": 5500,
+  "files.exclude": {
+    "**/__pycache__": true
+  },
+  "editor.wordWrap": "on"
+}

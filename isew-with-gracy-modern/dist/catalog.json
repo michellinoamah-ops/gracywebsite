@@ -1,0 +1,72 @@
+[
+  {
+    "id": "corset",
+    "title": "Bustier and Corset Masterclass",
+    "description": "Learn to build a corset that holds its shape and fits like a second skin. Over three weeks you will draft your own bodice block, cut clean princess darts, cage the bust for support, and finish every seam like a professional. This is the class for anyone ready to stop guessing and start constructing with real skill.",
+    "summary": "Two-part corsets, princess dart bustiers, deep plunge necklines, bust caging, yoke draping and simple beading finishing.",
+    "duration": "3-WEEK INTENSIVE",
+    "fee": "\u20a610,000 \u00b7 7,000 CFA \u00b7 140 Cedis \u00b7 1,000 KES",
+    "image": "assets/courses/corset.jpg",
+    "checkout": "https://selar.com/t715133ap6",
+    "level": "Skill builder",
+    "category": "Construction",
+    "published": true,
+    "order": 1
+  },
+  {
+    "id": "blazer",
+    "title": "Blazer Class",
+    "description": "A blazer is the one piece that makes an outfit look complete. In this class you will take accurate measurements, cut a jacket from scratch, and sew collars, lapels and a full waistcoat with confidence. By the end you will own a skill that clients are happy to pay well for.",
+    "summary": "Accurate blazer measurement, drafting and cutting from scratch, notched and shawl collars, waistcoats, and professional finishing techniques.",
+    "duration": "FULL CONSTRUCTION COURSE",
+    "fee": "\u20a65,000 \u00b7 3,500 Frs \u00b7 80 Cedis \u00b7 500 KES",
+    "image": "assets/courses/blazer.jpg",
+    "checkout": "https://selar.com/48784j",
+    "level": "Skill builder",
+    "category": "Construction",
+    "published": true,
+    "order": 2
+  },
+  {
+    "id": "pant",
+    "title": "A to Z Pant Masterclass",
+    "description": "Pants are one of the most requested pieces in any wardrobe. This class takes you from beginning to end through straight pants, palazzo, shorts, joggers and cargo styles. You will learn to take an accurate crotch measurement, the detail most people get wrong, plus you receive a free jumpsuit tutorial as a bonus.",
+    "summary": "Straight pants, palazzo, shorts, joggers and cargo pants, plus accurate crotch measurement for a perfect fit. Bonus: free jumpsuit tutorial.",
+    "duration": "ONLINE INTENSIVE",
+    "fee": "\u20a64,000 \u00b7 50 Cedis \u00b7 2,000 CFA \u00b7 400 KES",
+    "image": "assets/courses/pant.jpg",
+    "checkout": "https://selar.com/1p87b1",
+    "level": "Skill builder",
+    "category": "Construction",
+    "published": true,
+    "order": 3
+  },
+  {
+    "id": "beading",
+    "title": "Online Beading Class",
+    "description": "Beading turns a simple garment into something people stop and stare at. In this class you will learn beading materials and several beading patterns, including random, clustered and twisted styles, plus how to use a rivet machine like a pro. Perfect for anyone who wants to add a signature finish to their work.",
+    "summary": "Beading materials, random, clustered, straight-line and twisted beading, ombre effects, dress-tip beading, and rivet machine technique.",
+    "duration": "SELF-PACED MODULES",
+    "fee": "\u20a63,000 \u00b7 40 Cedis \u00b7 2,000 CFA",
+    "image": "assets/courses/beading.jpg",
+    "checkout": "https://selar.com/7c7vfuk3p0",
+    "level": "All levels",
+    "category": "Embellishment",
+    "published": true,
+    "order": 4
+  },
+  {
+    "id": "hippad",
+    "title": "Butt and Hip Pad Class",
+    "description": "This foundation class teaches you to build a butt and hip pad that looks natural and sits right every time. You will learn accurate measurement, how to identify the correct foam type, and how to draft, cut and sew a clean, professional pad from start to finish.",
+    "summary": "Accurate padding measurement, foam type identification, and pattern drafting, cutting and sewing of a perfectly shaped butt and hip pad.",
+    "duration": "FOUNDATION COURSE",
+    "fee": "\u20a63,000 \u00b7 2,000 Frs \u00b7 40 Cedis",
+    "image": "assets/courses/hippad.jpg",
+    "checkout": "https://selar.com/903037",
+    "level": "Foundation",
+    "category": "Construction",
+    "published": true,
+    "order": 5
+  }
+]

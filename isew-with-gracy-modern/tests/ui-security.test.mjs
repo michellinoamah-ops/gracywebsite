@@ -1,0 +1,6 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+globalThis.location={origin:'https://academy.example'};
+const {escape,safeURL,courseCard,postCard}=await import('../dist/ui.js');
+test('editorial fields cannot inject elements or attributes',()=>{const text='"><img src=x onerror=alert(1)>';assert.equal(escape(text),'&quot;&gt;&lt;img src=x onerror=alert(1)&gt;');const rendered=courseCard({id:'safe',title:text,description:text,image:'javascript:alert(1)'});assert.ok(!rendered.includes('<img src=x'));assert.ok(!rendered.includes('src="javascript:'));assert.match(rendered,/&lt;img/);});
+test('navigation accepts HTTPS and local paths, rejecting executable schemes',()=>{for(const u of ['javascript:alert(1)','data:text/html,<script>alert(1)</script>','vbscript:msgbox(1)','http://untrusted.example'])assert.equal(safeURL(u),'\/courses.html');assert.equal(safeURL('/courses.html'),'https://academy.example/courses.html');assert.equal(safeURL('https://selar.com/valid'),'https://selar.com/valid');});
+test('new article identifiers are encoded and image URLs cannot inject markup',()=>{const rendered=postCard({id:'a&b',slug:'new',title:'A story',image:'javascript:alert(1)',excerpt:'<script>bad()</script>'});assert.match(rendered,/id=a%26b/);assert.ok(!rendered.includes('<script>'));assert.ok(!rendered.includes('javascript:'));});

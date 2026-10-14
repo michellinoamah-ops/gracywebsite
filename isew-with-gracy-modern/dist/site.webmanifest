@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "ISew with Gracy \u2014 Fashion Academy",
+  "short_name": "ISew",
+  "description": "Your fashion academy, close to your craft.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fbf3e6",
+  "theme_color": "#392a24",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
