@@ -24,13 +24,13 @@ Extract the ZIP, open the folder containing `package.json` in VS Code, and run `
 
 The private preview is hosted through Sites. It uses the included public content snapshot. The admin “Preview the workspace” button opens an in-memory design preview, clearly marked as such. Preview changes reset on reload and never affect the live academy.
 
-This package is not connected to the original Firebase project. Live admin sign-in, saving, uploads and forms need the setup in **SETUP.md**. WhatsApp, email and the original Selar links work independently.
+The supplied Firebase web configuration for `isew-with-gracy` is now installed. Firebase Authentication, verified administrator access, database rules and App Check still need to be configured in your account. Live admin sign-in, saving, uploads and forms need the setup in **SETUP.md**. WhatsApp, email and the original Selar links work independently.
 
 ## Project layout
 
 - `dist/` — upload/deploy this directory as the website root.
 - `dist/admin.html` — the academy admin entry point.
-- `dist/runtime-config.js` — intentionally empty public Firebase web configuration.
+- `dist/runtime-config.js` — the public Firebase web configuration supplied by the site owner.
 - `scripts/build.py` — generate crawlable pages from the catalog and journal content.
 - `scripts/check.py` — static integrity and JavaScript security checks.
 - `scripts/grant-admin.mjs` — trusted-machine administrator role helper.

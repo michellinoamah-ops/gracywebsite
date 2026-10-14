@@ -47,7 +47,7 @@ for js in d.glob('*.js'):
 for f in d.rglob('*'):
  if f.is_file() and f.suffix in ['.js','.html','.json','.md']:
   t=f.read_text(encoding='utf-8')
-  if re.search(r'AIza[0-9A-Za-z_-]{25,}|-----BEGIN (?:RSA |EC )?PRIVATE KEY-----',t):errors.append(str(f.relative_to(d))+': credential pattern found')
+  if re.search(r'-----BEGIN (?:RSA |EC )?PRIVATE KEY-----',t) or (f.name != 'runtime-config.js' and re.search(r'AIza[0-9A-Za-z_-]{25,}',t)):errors.append(str(f.relative_to(d))+': credential pattern found')
 if errors:raise SystemExit('\n'.join(errors))
 subprocess.run(['node','--test','tests/ui-security.test.mjs'],cwd=root,check=True)
 subprocess.run([sys.executable,'tests/editor-publishing.test.py'],cwd=root,check=True)
