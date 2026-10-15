@@ -3,12 +3,17 @@ service firebase.storage {
  match /b/{bucket}/o {
   function admin() { return request.auth != null && request.auth.token.admin == true && request.auth.token.email_verified == true; }
   match /{folder}/{file} {
-   allow read: if folder in ['classes','testimonials','journal'];
-   allow create, update: if admin() && folder in ['classes','testimonials','journal']
-    && request.resource.size < 5 * 1024 * 1024
+   allow read: if folder in ['classes','testimonials','journal','popups'];
+   allow create, update: if admin() && folder in ['classes','testimonials','journal','popups']
+    && request.resource.size <= 5 * 1024 * 1024
     && request.resource.contentType.matches('image/(jpeg|png|webp)')
     && file.matches('^[a-zA-Z0-9_-]+\\.(jpg|jpeg|png|webp)$');
-   allow delete: if admin() && folder in ['classes','testimonials','journal'];
+   allow delete: if admin() && folder in ['classes','testimonials','journal','popups'];
+  }
+  match /documents/{file} {
+   allow read: if true;
+   allow create, update: if admin() && request.resource.size <= 10 * 1024 * 1024 && request.resource.contentType in ['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/plain'] && file.matches('^[a-zA-Z0-9_-]+\\.(pdf|docx|txt)$');
+   allow delete: if admin();
   }
   match /{allPaths=**} { allow read, write: if false; }
  }

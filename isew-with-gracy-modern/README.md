@@ -1,3 +1,5 @@
+> **Latest update:** Read [UPDATE-START-HERE.md](UPDATE-START-HERE.md) for the new video, publishing, course, iPhone and deployment instructions.
+
 # ISew with Gracy / The Fashion Academy
 
 A complete redesign in warm cream, clay, chocolate, ochre, rose and sage, with Cormorant Garamond headings and DM Sans body text. The original course offers, Selar links, photographs, contact details and student screenshots are preserved. No invented sales figures, accreditation, reviews or star ratings were added.
@@ -22,7 +24,7 @@ Extract the ZIP, open the folder containing `package.json` in VS Code, and run `
 
 ## Open the redesign
 
-The private preview is hosted through Sites. It uses the included public content snapshot. The admin “Preview the workspace” button opens an in-memory design preview, clearly marked as such. Preview changes reset on reload and never affect the live academy.
+Public pages use the included content snapshot and connected Firebase content. The administrator workspace requires a verified administrator account; there is no demonstration login.
 
 The supplied Firebase web configuration for `isew-with-gracy` is now installed. Firebase Authentication, verified administrator access, database rules and App Check still need to be configured in your account. Live admin sign-in, saving, uploads and forms need the setup in **SETUP.md**. WhatsApp, email and the original Selar links work independently.
 

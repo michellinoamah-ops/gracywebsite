@@ -7,7 +7,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://www.gstatic.com https://www.google.com https://www.recaptcha.net; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://firebasestorage.googleapis.com https://www.google.com https://www.recaptcha.net; frame-src https://www.google.com https://www.recaptcha.net; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+          "value": "default-src 'self'; media-src 'self'; script-src 'self' https://www.gstatic.com https://www.google.com https://www.recaptcha.net; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data: blob:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://firebasestorage.googleapis.com https://www.google.com https://www.recaptcha.net; frame-src https://www.google.com https://www.recaptcha.net; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
         },
         {
           "key": "X-Content-Type-Options",
@@ -48,11 +48,42 @@
           "value": "no-cache"
         }
       ]
+    },
+    {
+      "source": "/assets/videos/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800"
+        }
+      ]
     }
   ],
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "",
   "buildCommand": "node scripts/verify-deployment.mjs",
-  "cleanUrls": false
+  "cleanUrls": false,
+  "rewrites": [
+    {
+      "source": "/read/measure-before-you-cut",
+      "destination": "/journal/measure-before-you-cut.html"
+    },
+    {
+      "source": "/read/sewing-toolkit",
+      "destination": "/journal/sewing-toolkit.html"
+    },
+    {
+      "source": "/read/finishing-details",
+      "destination": "/journal/finishing-details.html"
+    },
+    {
+      "source": "/learn/:slug",
+      "destination": "/courses/class.html"
+    },
+    {
+      "source": "/read/:slug",
+      "destination": "/journal/article.html"
+    }
+  ]
 }

@@ -9,3 +9,5 @@ node_modules/
 firebase-debug.log
 firestore-debug.log
 .openai/runtime/
+
+isew-admin*.json*

@@ -18,14 +18,19 @@ service cloud.firestore {
    allow create, update: if admin() && short(request.resource.data.title,160)
     && short(request.resource.data.description,5000) && short(request.resource.data.summary,600)
     && short(request.resource.data.fee,200) && short(request.resource.data.image,2000)
+    && (!('images' in request.resource.data) || (request.resource.data.images is list && request.resource.data.images.size() <= 8))
+    && (!('order' in request.resource.data) || (request.resource.data.order is int && request.resource.data.order >= 1 && request.resource.data.order <= 999))
+    && (!('slug' in request.resource.data) || (request.resource.data.slug is string && request.resource.data.slug.size() <= 100 && request.resource.data.slug.matches('^[a-z0-9]+(-[a-z0-9]+)*$')))
     && request.resource.data.checkout.matches('^https://(www\\.)?selar\\.com/.*$')
     && request.resource.data.published is bool;
    allow delete: if admin();
   }
   match /posts/{id} {
    allow read: if admin() || publicDoc();
-   allow create, update: if admin() && request.resource.data.keys().hasOnly(['id','title','slug','category','date','excerpt','body','bodyHtml','image','published'])
+   allow create, update: if admin() && request.resource.data.keys().hasOnly(['id','title','slug','category','date','excerpt','body','bodyHtml','image','published','attachments','articleStyle'])
     && short(request.resource.data.title,180) && short(request.resource.data.excerpt,300)
+    && (!('attachments' in request.resource.data) || (request.resource.data.attachments is list && request.resource.data.attachments.size() <= 5))
+    && (!('articleStyle' in request.resource.data) || request.resource.data.articleStyle in ['editorial','tutorial','field-notes'])
     && (!('bodyHtml' in request.resource.data) || (request.resource.data.bodyHtml is string && request.resource.data.bodyHtml.size() <= 60000))
     && short(request.resource.data.body,20000) && short(request.resource.data.image,2000)
     && request.resource.data.slug.matches('^[a-z0-9]+(-[a-z0-9]+)*$') && request.resource.data.slug.size() <= 100
@@ -41,12 +46,13 @@ service cloud.firestore {
   }
   match /popups/{id} {
    allow read: if admin() || publicDoc();
-   allow create, update: if admin() && request.resource.data.keys().hasOnly(['title','message','buttonLabel','url','page','delaySeconds','frequencyDays','priority','startsAt','endsAt','enabled','published','design'])
+   allow create, update: if admin() && request.resource.data.keys().hasOnly(['title','message','buttonLabel','url','page','delaySeconds','frequencyDays','priority','startsAt','endsAt','enabled','published','design','images'])
     && short(request.resource.data.title,180) && short(request.resource.data.message,1200)
+    && (!('images' in request.resource.data) || (request.resource.data.images is list && request.resource.data.images.size() <= 2))
     && short(request.resource.data.buttonLabel,200) && short(request.resource.data.url,2000)
     && request.resource.data.delaySeconds is number && request.resource.data.delaySeconds >= 3 && request.resource.data.delaySeconds <= 120
     && request.resource.data.frequencyDays is number && request.resource.data.frequencyDays >= 1 && request.resource.data.frequencyDays <= 365
-    && (!('design' in request.resource.data) || request.resource.data.design in ['atelier','sunrise','postcard','ribbon'])
+    && (!('design' in request.resource.data) || request.resource.data.design in ['atelier','sunrise','postcard','ribbon','lookbook','gallery'])
     && request.resource.data.enabled is bool && request.resource.data.published is bool;
    allow delete: if admin();
   }

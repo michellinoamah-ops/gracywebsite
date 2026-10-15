@@ -47,3 +47,10 @@ export async function upload(file,folder){
  const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[file.type];
  const ref=s.storage.ref(s.bucket,folder+'/'+crypto.randomUUID()+'.'+ext);await s.storage.uploadBytes(ref,file,{contentType:file.type});return s.storage.getDownloadURL(ref);
 }
+
+export async function uploadDocument(file){
+ const types={'application/pdf':'pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document':'docx','text/plain':'txt'};
+ const ext=file.name.split('.').pop().toLowerCase(),type=Object.keys(types).find(t=>types[t]===ext);
+ if(!type||file.size>10*1024*1024)throw new Error('Use a PDF, DOCX or TXT document up to 10 MB.');
+ const s=await connect();if(!s)throw new Error('Backend unavailable.');const ref=s.storage.ref(s.bucket,'documents/'+crypto.randomUUID()+'.'+ext);await s.storage.uploadBytes(ref,file,{contentType:type});return {name:file.name,url:await s.storage.getDownloadURL(ref),size:file.size};
+}

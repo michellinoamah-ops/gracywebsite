@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 Disallow: /admin.html
-Sitemap: https://isew-gracy-modern.earlycream33.chatgpt.site/sitemap.xml
+Sitemap: https://www.isewwithgracy.com/sitemap.xml
